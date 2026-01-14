@@ -24,21 +24,19 @@ def get_snapshots():
 
         # Validate snapshot age
         if snapshot_age > 3600:
-            print("Snapshot over 1hr old, disregard")
+            # print("Snapshot over 1hr old, disregard")
             return
 
         # Validate snapshot tags
         if 'system' in snapshot['tags']:
-            print('Invalid snapshot tag: System')
+            # print('Invalid snapshot tag: System')
             return
         elif 'suspect' in snapshot['tags']: 
-            print('Invalid snapshot tag: Suspect')
+            # print('Invalid snapshot tag: Suspect')
             return
 
         # Print valid snapshots
-        print("readable time:", datetime.fromtimestamp(snapshot['time']))
-        print("current time:", datetime.fromtimestamp(current_time))
-        print("Parsed snapshot:", snapshot)
+        print(f"Valid '{snapshot['tags'][0]}' snapshot measuring {snapshot['value']}°C at {datetime.fromtimestamp(snapshot['time']).strftime('%H:%M:%S')}")
 
     except Exception as e:
         print(f"Fetch error: {e}")
