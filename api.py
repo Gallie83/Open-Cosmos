@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-from storage import snapshot_storage
+from storage import snapshot_storage, discarded_snapshots
 from datetime import datetime
 
 app = Flask(__name__)

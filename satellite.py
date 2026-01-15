@@ -1,7 +1,7 @@
 import requests
 import time
 from datetime import datetime
-from storage import snapshot_storage
+from storage import snapshot_storage, discarded_snapshots
 
 def get_snapshots():
     try:
@@ -29,19 +29,45 @@ def get_snapshots():
         # Validate snapshot age
         if snapshot_age > 3600:
             # print("Snapshot over 1hr old, disregard")
+            discarded_snapshots.append({ 
+                'time': iso_time, 
+                'value': snapshot['value'], 
+                'tags': snapshot['tags'], 
+                'reason': 'age' 
+                })
             return
 
         # Validate snapshot tags
-        if 'system' in snapshot['tags']:
+        elif 'system' in snapshot['tags']:
             # print('Invalid snapshot tag: System')
+            discarded_snapshots.append({ 
+                'time': iso_time, 
+                'value': snapshot['value'], 
+                'tags': snapshot['tags'], 
+                'reason': 'system' 
+                })
             return
         elif 'suspect' in snapshot['tags']: 
             # print('Invalid snapshot tag: Suspect')
+            discarded_snapshots.append({ 
+                'time': iso_time, 
+                'value': snapshot['value'], 
+                'tags': snapshot['tags'], 
+                'reason': 'suspect' 
+                })
             return
 
         # Print valid snapshots and append to snapshots list in storage.py
-        print(f"Valid '{snapshot['tags'][0]}' snapshot measuring {snapshot['value']}°C at {datetime.fromtimestamp(snapshot['time']).strftime('%H:%M:%S')}")
-        snapshot_storage.append({ 'time': iso_time, 'value': snapshot['value'], 'tags': snapshot['tags'] })
+        tag = snapshot['tags'][0]
+        temp = snapshot['value']
+        time_str = datetime.fromtimestamp(snapshot['time'])
+                                          
+        print(f"Valid {tag} snapshot measuring {temp}°C at {time_str.strftime('%H:%M:%S')}")
+        snapshot_storage.append({ 
+            'time': iso_time, 
+            'value': snapshot['value'], 
+            'tags': snapshot['tags'] 
+            })
 
     except Exception as e:
         print(f"Fetch error: {e}")
