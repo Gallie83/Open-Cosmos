@@ -1,6 +1,7 @@
 import requests
 import time
 from datetime import datetime
+from storage import snapshot_storage
 
 def get_snapshots():
     try:
@@ -18,9 +19,12 @@ def get_snapshots():
 
         snapshot = response.json()
 
+        # Calculate snapshots age
         current_time = time.time()
         snapshot_age = current_time - snapshot['time']
 
+        # Convert timestamp from Unix to IsoTime
+        iso_time = datetime.fromtimestamp(snapshot['time']).isoformat()
 
         # Validate snapshot age
         if snapshot_age > 3600:
@@ -35,8 +39,9 @@ def get_snapshots():
             # print('Invalid snapshot tag: Suspect')
             return
 
-        # Print valid snapshots
+        # Print valid snapshots and append to snapshots list in storage.py
         print(f"Valid '{snapshot['tags'][0]}' snapshot measuring {snapshot['value']}°C at {datetime.fromtimestamp(snapshot['time']).strftime('%H:%M:%S')}")
+        snapshot_storage.append({ 'time': iso_time, 'value': snapshot['value'], 'tags': snapshot['tags'] })
 
     except Exception as e:
         print(f"Fetch error: {e}")
