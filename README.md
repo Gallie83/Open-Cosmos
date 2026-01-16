@@ -8,7 +8,7 @@ Backend application built for Open Cosmos challenege project.
 - In-memory storage for both validated and discarded snapshots
 - Exposes HTTP endpoints that returns validated or discarded snapshots
 - Optional query parameters such as start/end times and reason for being discarded
-- Structred logs
+- Structured logs
 
 ## API
 
@@ -17,10 +17,13 @@ Backend application built for Open Cosmos challenege project.
 Returns valid satellite snapshots as json with optional start/end time filtering.
 
 **Query Parameters**
-`start`: ISO-8601 Format - Filter snapshots with start time - defaults to '0000-01-01T00:00:00' if omitted
-`end`: ISO-8601 Format - Filter snapshots with end time - defaults to '9999-12-31T23:59:59' if omitted
+
+- `start`: ISO-8601 Format - Filter snapshots with start time - defaults to '0000-01-01T00:00:00' if omitted
+- `end`: ISO-8601 Format - Filter snapshots with end time - defaults to '9999-12-31T23:59:59' if omitted
 
 **Response**
+
+```
 [
 {
 "tags":["sun-glint"],
@@ -28,21 +31,26 @@ Returns valid satellite snapshots as json with optional start/end time filtering
 "value":1.0122155
 }
 ]
+```
 
 **Error Responses**
-`400`: Invalid parameters, non ISO-8601 time formats or a start time in the future
-`500`: Sever errors
+
+- `400`: Invalid parameters, non ISO-8601 time formats or a start time in the future
+- `500`: Sever errors
 
 ### GET /discarded
 
 Returns satellite snapshots that were discarded due to snapshots age being over 1 hour old, or having system/suspect tags. Response returned as json with optional parameters such as reason for being discarded or start/end time.
 
 **Query Parameters**
-`start`: ISO-8601 Format - Filter snapshots with start time - defaults to '0000-01-01T00:00:00' if omitted
-`end`: ISO-8601 Format - Filter snapshots with end time - defaults to '9999-12-31T23:59:59' if omitted
-`reason`: Accepts 'age', 'suspect' or 'system' - Filters based on reason for snapshot being discarded
+
+- `start`: ISO-8601 Format - Filter snapshots with start time - defaults to '0000-01-01T00:00:00' if omitted
+- `end`: ISO-8601 Format - Filter snapshots with end time - defaults to '9999-12-31T23:59:59' if omitted
+- `reason`: Accepts 'age', 'suspect' or 'system' - Filters based on reason for snapshot being discarded
 
 **Response**
+
+```
 [
 {
 "reason":"age",
@@ -51,7 +59,9 @@ Returns satellite snapshots that were discarded due to snapshots age being over 
 "value":1.0122155
 }
 ]
+```
 
 **Error Responses**
-`400`: Invalid parameters, non ISO-8601 time formats or a start time in the future
-`500`: Sever errors
+
+- `400`: Invalid parameters, non ISO-8601 time formats or a start time in the future
+- `500`: Sever errors
