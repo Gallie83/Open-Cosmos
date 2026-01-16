@@ -1,6 +1,6 @@
 # Open Cosmos
 
-Backend application built for Open Cosmos challenege project.
+Backend application built for Open Cosmos challenge project.
 
 ## Features
 
@@ -10,7 +10,49 @@ Backend application built for Open Cosmos challenege project.
 - Optional query parameters such as start/end times and reason for being discarded
 - Structured logs
 
+## Prerequisites
+
+- Python 3.10 or higher
+
+## Setup
+
+1. Clone the repository
+
+```bash
+git clone https://github.com/Gallie83/Open-Cosmos.git
+cd Open-Cosmos
+```
+
+2. Create virtual environment with
+
+```bash
+python -m venv .venv
+```
+
+3. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+## Running Application
+
+1. Run data-server to fetch satellite data
+
+```bash
+cd data-server
+./data-server --port 28462
+```
+
+2. Run application to start parsing and validating satellite data
+
+```bash
+python main.py
+```
+
 ## API
+
+API is on `http://localhost:8080`
 
 ### GET /snapshots
 
@@ -23,13 +65,13 @@ Returns valid satellite snapshots as json with optional start/end time filtering
 
 **Response**
 
-```
+```json
 [
-{
-"tags":["sun-glint"],
-"time":"2026-01-16T16:48:26",
-"value":1.0122155
-}
+  {
+    "tags": ["sun-glint"],
+    "time": "2026-01-16T16:48:26",
+    "value": 1.0122155
+  }
 ]
 ```
 
@@ -50,14 +92,14 @@ Returns satellite snapshots that were discarded due to snapshots age being over 
 
 **Response**
 
-```
+```json
 [
-{
-"reason":"age",
-"tags":["sun-glint"],
-"time":"2026-01-16T16:48:26",
-"value":1.0122155
-}
+  {
+    "reason": "age",
+    "tags": ["sun-glint"],
+    "time": "2026-01-16T16:48:26",
+    "value": 1.0122155
+  }
 ]
 ```
 
