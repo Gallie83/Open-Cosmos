@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from storage import snapshot_storage, discarded_snapshots
 from datetime import datetime
+import logging
 
 app = Flask(__name__)
 
@@ -15,13 +16,16 @@ def datetime_valid(dt_str):
 # Validate and set both start and end time
 def get_valid_snapshots(start_time, end_time, snapshots):
     if start_time and not datetime_valid(start_time):
+        logging.error(f'Invalid ISO start format: {start_time}')
         return jsonify({'error': 'Invalid ISO start format'}), 400
     
     # Ensure start date not in the future
-    if start_time > datetime.now().isoformat():
+    if start_time and start_time > datetime.now().isoformat():
+        logging.error(f'Start value cannot be in the future: {start_time}')
         return jsonify({'error': 'Start value cannot be in the future'}), 400
     
     if end_time and not datetime_valid(end_time):
+        logging.error(f'Invalid ISO end format: {end_time}')
         return jsonify({'error': 'Invalid ISO end format'}), 400
     
     # Set start and end times or assign extreme values
@@ -31,6 +35,7 @@ def get_valid_snapshots(start_time, end_time, snapshots):
     valid_snapshots = []
 
     if start > end:
+        logging.error(f'Start time must be before End time: {start_time}, {end_time}')
         return jsonify({'error': 'Start time must be before End time'}), 400
 
     for snap in snapshots:
@@ -50,6 +55,7 @@ def get_snapshots():
         unknown_params = params - valid_params
 
         if unknown_params:
+            logging.error(f'Invalid parameters: {unknown_params}')
             return jsonify({'error': "Invalid parameters, only 'start' or 'end' accepted"}), 400
 
         start_time = request.args.get('start')
@@ -61,9 +67,11 @@ def get_snapshots():
         if not isinstance(valid_snapshots, list):
             return valid_snapshots
                 
+        logging.info(f'Successfully returned {len(valid_snapshots)} valid snapshots')
         return jsonify(valid_snapshots)
     
     except Exception as e:
+        logging.error(f'Server error: {e}')
         return jsonify({'error': f'Server error: {e}'}), 500
 
 # GET/ Returns all discarded snapshots, optional start/end/reason parameters
@@ -77,6 +85,7 @@ def get_discarded():
         unknown_params = params - valid_params
 
         if unknown_params:
+            logging.error(f'Invalid parameters: {unknown_params}')
             return jsonify({'error': "Invalid parameters, only 'start', 'end' or 'reason' accepted"}), 400
 
         start_time = request.args.get('start')
@@ -84,6 +93,7 @@ def get_discarded():
         reason = request.args.get('reason')
 
         if reason and reason not in ['age', 'suspect', 'system']:
+            logging.error(f'Invalid reason value: {reason}')
             return jsonify({'error': "Invalid 'reason' value. Only 'age', 'suspect' or 'system' accepted"}), 400
         
         # Validate start/end times and populate valid_snapshots list
@@ -96,9 +106,11 @@ def get_discarded():
         if reason:
             valid_snapshots = [snap for snap in valid_snapshots if snap['reason'] == reason]
         
+        logging.info(f'Successfully returned {len(valid_snapshots)} discarded snapshots')
         return jsonify(valid_snapshots)
     
     except Exception as e:
+        logging.error(f'Server error: {e}')
         return jsonify({'error': f'Server error: {e}'}), 500
     
 def start_api():

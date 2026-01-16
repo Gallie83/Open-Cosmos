@@ -2,6 +2,7 @@ import requests
 import time
 from datetime import datetime
 from storage import snapshot_storage, discarded_snapshots
+import logging
 
 def get_snapshots():
     try:
@@ -10,11 +11,11 @@ def get_snapshots():
 
         # Early return if bad status code
         if response.status_code == 404:
-            print("No data currently available")
+            logging.info("No data currently available from satellite: 404")
             return
         
         if response.status_code != 200:
-            print(f"Unexpected status code: {response.status_code}")
+            logging.error(f"Unexpected status code: {response.status_code}")
             return
 
         snapshot = response.json()
@@ -28,7 +29,7 @@ def get_snapshots():
 
         # Validate snapshot age
         if snapshot_age > 3600:
-            # print("Snapshot over 1hr old, disregard")
+            logging.warning(f'Snapshot over 1hr old, disregard: {snapshot}')
             discarded_snapshots.append({ 
                 'time': iso_time, 
                 'value': snapshot['value'], 
@@ -39,7 +40,7 @@ def get_snapshots():
 
         # Validate snapshot tags
         elif 'system' in snapshot['tags']:
-            # print('Invalid snapshot tag: System')
+            logging.warning(f'Invalid system tag: {snapshot}')
             discarded_snapshots.append({ 
                 'time': iso_time, 
                 'value': snapshot['value'], 
@@ -48,7 +49,7 @@ def get_snapshots():
                 })
             return
         elif 'suspect' in snapshot['tags']: 
-            # print('Invalid snapshot tag: Suspect')
+            logging.warning(f'Invalid suspect tag: {snapshot}')
             discarded_snapshots.append({ 
                 'time': iso_time, 
                 'value': snapshot['value'], 
@@ -62,7 +63,7 @@ def get_snapshots():
         temp = snapshot['value']
         time_str = datetime.fromtimestamp(snapshot['time'])
                                           
-        print(f"Valid {tag} snapshot measuring {temp}°C at {time_str.strftime('%H:%M:%S')}")
+        logging.info(f"Valid {tag} snapshot measuring {temp}°C at {time_str.strftime('%H:%M:%S')}")
         snapshot_storage.append({ 
             'time': iso_time, 
             'value': snapshot['value'], 
@@ -70,4 +71,4 @@ def get_snapshots():
             })
 
     except Exception as e:
-        print(f"Fetch error: {e}")
+        logging.error(f"Fetch error: {e}")
