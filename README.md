@@ -107,3 +107,20 @@ Returns satellite snapshots that were discarded due to snapshots age being over 
 
 - `400`: Invalid parameters, non ISO-8601 time formats or a start time in the future
 - `500`: Sever errors
+
+## Approach and Trade-offs
+
+This backend application was built with simplicity and functionality in mind. I chose to build the API endpoints with Flask as it is an effective lightweight solution for writing REST api's with straight forward setup. I initially considered using dictionaries with timestamps as keys for in-memory storage, but opted for lists to avoid overwriting snapshots with identical timestamps. Snapshot's time values are stored as ISO-8601 as that is the format for query parameter start/end times.
+
+Threading is used in main.py to allow the Flask server to run in the background and accept GET requests while satellite.py polls the mock server, and they can share in-memory storage naturally. Python's built in logging system is used to log valid and discarded snapshots being stored, as well as successful and non-successful api calls.
+
+Validation was a top priority at every step. The responses returned by the mock server are validated for both the age and tags. In the API, validation checks are carried out on the start/end time parameters to check if they exist, are in the correct ISO-8601 format, and to ensure the start date is not a future date. To follow DRY principles I extracted re-occuring validation logic into a helper function get_valid_snapshots().
+
+## Project Architecture
+
+Open-Cosmos/
+├── main.py # Calls satellite data every second with background API threading
+├── satellite.py # Fetches satellite data and sorts into valid and discarded snapshots
+├── storage.py # In-memory data storage for valid and discarded snapshots
+├── api.py # Flask REST endpoints
+└── data-server/ # Mock satellite server
