@@ -11,13 +11,40 @@ def datetime_valid(dt_str):
         return True
     except ValueError:
         return False
+    
+# Validate and set both start and end time
+def get_valid_snapshots(start_time, end_time, snapshots):
+    if start_time and not datetime_valid(start_time):
+        return jsonify({'error': 'Invalid ISO start format'}), 400
+    
+    # Ensure start date not in the future
+    if start_time > datetime.now().isoformat():
+        return jsonify({'error': 'Start value cannot be in the future'}), 400
+    
+    if end_time and not datetime_valid(end_time):
+        return jsonify({'error': 'Invalid ISO end format'}), 400
+    
+    # Set start and end times or assign extreme values
+    start = start_time or '0000-01-01T00:00:00'
+    end = end_time or '9999-12-31T23:59:59'
+
+    valid_snapshots = []
+
+    if start > end:
+        return jsonify({'error': 'Start time must be before End time'}), 400
+
+    for snap in snapshots:
+        if start <= snap['time'] <= end:
+            valid_snapshots.append(snap)
+
+    return valid_snapshots
 
 # GET/ Returns all valid snapshots, optional start and end time parameters
 @app.route('/snapshots')
 def get_snapshots():
 
     try:
-        # First validate start and end parameters, if they exist
+        # First check start and end parameters, if they exist
         valid_params = {'start', 'end'}
         params = set(request.args.keys())
         unknown_params = params - valid_params
@@ -28,28 +55,11 @@ def get_snapshots():
         start_time = request.args.get('start')
         end_time = request.args.get('end')
 
-        if start_time and not datetime_valid(start_time):
-            return jsonify({'error': 'Invalid ISO start format'}), 400
-        
-        # Ensure start date not in the future
-        if start_time > datetime.now().isoformat():
-            return jsonify({'error': 'Start value cannot be in the future'}), 400
-        
-        if end_time and not datetime_valid(end_time):
-            return jsonify({'error': 'Invalid ISO end format'}), 400
-        
-        # Set start and end times or assign extreme values
-        start = start_time or '0000-01-01T00:00:00'
-        end = end_time or '9999-12-31T23:59:59'
-
-        valid_snapshots = []
-
-        if start > end:
-            return jsonify({'error': 'Start time must be before End time'}), 400
-
-        for snap in snapshot_storage:
-            if start <= snap['time'] <= end:
-                valid_snapshots.append(snap)
+        # Validate start/end times and populate valid_snapshots list
+        valid_snapshots = get_valid_snapshots(start_time, end_time, snapshot_storage)
+        # If not a list then return the error message
+        if not isinstance(valid_snapshots, list):
+            return valid_snapshots
                 
         return jsonify(valid_snapshots)
     
@@ -61,7 +71,7 @@ def get_snapshots():
 def get_discarded():
 
     try:
-        # First validate parameters, if they exist
+        # First check parameters are correct, if they exist
         valid_params = {'start', 'end', 'reason'}
         params = set(request.args.keys())
         unknown_params = params - valid_params
@@ -73,36 +83,19 @@ def get_discarded():
         end_time = request.args.get('end')
         reason = request.args.get('reason')
 
-        if start_time and not datetime_valid(start_time):
-            return jsonify({'error': 'Invalid ISO start format'}), 400
-        
-        # Ensure start date not in the future
-        if start_time > datetime.now().isoformat():
-            return jsonify({'error': 'Start value cannot be in the future'}), 400
-        
-        if end_time and not datetime_valid(end_time):
-            return jsonify({'error': 'Invalid ISO end format'}), 400
-        
         if reason and reason not in ['age', 'suspect', 'system']:
             return jsonify({'error': "Invalid 'reason' value. Only 'age', 'suspect' or 'system' accepted"}), 400
         
-        # Set start and end times or assign extreme values
-        start = start_time or '0000-01-01T00:00:00'
-        end = end_time or '9999-12-31T23:59:59'
-
-        valid_snapshots = []
-
-        if start > end:
-            return jsonify({'error': 'Start time must be before End time'}), 400
-
-        for snap in discarded_snapshots:
-            if start <= snap['time'] <= end:
-                valid_snapshots.append(snap)
+        # Validate start/end times and populate valid_snapshots list
+        valid_snapshots = get_valid_snapshots(start_time, end_time, discarded_snapshots)
+        # If not a list then return the error message
+        if not isinstance(valid_snapshots, list):
+            return valid_snapshots
 
         # Filter by reason if provided
         if reason:
             valid_snapshots = [snap for snap in valid_snapshots if snap['reason'] == reason]
-                
+        
         return jsonify(valid_snapshots)
     
     except Exception as e:
