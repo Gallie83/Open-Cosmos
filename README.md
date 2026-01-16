@@ -118,9 +118,11 @@ Validation was a top priority at every step. The responses returned by the mock 
 
 ## Project Architecture
 
+```
 Open-Cosmos/
 ├── main.py # Calls satellite data every second with background API threading
 ├── satellite.py # Fetches satellite data and sorts into valid and discarded snapshots
 ├── storage.py # In-memory data storage for valid and discarded snapshots
 ├── api.py # Flask REST endpoints
 └── data-server/ # Mock satellite server
+```
