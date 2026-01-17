@@ -1,5 +1,6 @@
 from satellite import get_snapshots
 from api import start_api
+from database import init_db
 import time
 import threading
 import logging
@@ -12,6 +13,8 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
+
+init_db()
 
 # Run Flask server in background thread
 api_thread = threading.Thread(target=start_api, daemon=True)

@@ -39,22 +39,48 @@ def init_db():
         connection = connection_pool.getconn()
         cursor = connection.cursor()
 
-        # Create table for valid_snapshots
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS valid_snapshots(
-                id SERIAL PRIMARY KEY,
-                time TIMESTAMP NOT NULL,
-                value REAL NOT NULL,
-                tags TEXT[] NOT NULL
-            )
-        """)
+        try:
+            # Create table for valid_snapshots
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS valid_snapshots(
+                    id SERIAL PRIMARY KEY,
+                    time TIMESTAMP NOT NULL,
+                    value REAL NOT NULL,
+                    tags TEXT[] NOT NULL
+                )
+            """)
 
-        connection.commit()
-        logging.info("valid_snapshots table created successfully")
+            # Add indexing for time queries
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_valid_time
+                ON valid_snapshots(time)
+            """)
 
-        # Close cursor and return connection
-        cursor.close()
-        connection_pool.putconn(connection)
+            # Create table for discarded_snapshots
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS discarded_snapshots(
+                    id SERIAL PRIMARY KEY,
+                    time TIMESTAMP NOT NULL,
+                    value REAL NOT NULL,
+                    tags TEXT[] NOT NULL,
+                    reason TEXT NOT NULL
+                )
+            """)
+
+            # Add indexing for time queries
+            cursor.execute("""
+                CREATE INDEX IF NOT EXISTS idx_discarded_time
+                ON discarded_snapshots(time)
+            """)
+
+            connection.commit()
+            logging.info("Database tables created successfully")
+
+        finally:    
+            # Ensure cursor closes and connection is returned
+            cursor.close()
+            connection_pool.putconn(connection)
 
     except Exception as e:
         logging.error(f"Error connecting to database: {e}")
+        raise
