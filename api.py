@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-from storage import snapshot_storage, discarded_snapshots
+from storage import get_valid_snapshots, get_discarded_snapshots
 from datetime import datetime
 import logging
 
@@ -13,8 +13,9 @@ def datetime_valid(dt_str):
     except ValueError:
         return False
     
-# Validate and set both start and end time
-def get_valid_snapshots(start_time, end_time, snapshots):
+# Helper function to validate and set both start and end time
+def set_times(start_time, end_time):
+    logging.debug("TESTING")
     if start_time and not datetime_valid(start_time):
         logging.error(f'Invalid ISO start format: {start_time}')
         return jsonify({'error': 'Invalid ISO start format'}), 400
@@ -29,25 +30,22 @@ def get_valid_snapshots(start_time, end_time, snapshots):
         return jsonify({'error': 'Invalid ISO end format'}), 400
     
     # Set start and end times or assign extreme values
-    start = start_time or '0000-01-01T00:00:00'
-    end = end_time or '9999-12-31T23:59:59'
-
-    valid_snapshots = []
+    start = (datetime.fromisoformat(start_time) if start_time 
+            else datetime.min)
+    end = (datetime.fromisoformat(end_time) if end_time 
+            else datetime.max)
 
     if start > end:
         logging.error(f'Start time must be before End time: {start_time}, {end_time}')
         return jsonify({'error': 'Start time must be before End time'}), 400
 
-    for snap in snapshots:
-        if start <= snap['time'] <= end:
-            valid_snapshots.append(snap)
-
-    return valid_snapshots
+    logging.debug(f'Start type: {type(start)}, End type: {type(end)}')
+    return [start, end]
 
 # GET/ Returns all valid snapshots, optional start and end time parameters
 @app.route('/snapshots')
 def get_snapshots():
-
+    logging.debug("TESTING 1")
     try:
         # First check start and end parameters, if they exist
         valid_params = {'start', 'end'}
@@ -61,13 +59,13 @@ def get_snapshots():
         start_time = request.args.get('start')
         end_time = request.args.get('end')
 
-        # Validate start/end times and populate valid_snapshots list
-        valid_snapshots = get_valid_snapshots(start_time, end_time, snapshot_storage)
-        # If not a list then return the error message
-        if not isinstance(valid_snapshots, list):
-            return valid_snapshots
-                
-        logging.info(f'Successfully returned {len(valid_snapshots)} valid snapshots')
+        # Validate and set start/end times
+        times = set_times(start_time, end_time)
+        # If times is not a list then return the error message
+        if not isinstance(times, list):
+            return times
+        
+        valid_snapshots = get_valid_snapshots(times[0], times[1])
         return jsonify(valid_snapshots)
     
     except Exception as e:
@@ -77,7 +75,7 @@ def get_snapshots():
 # GET/ Returns all discarded snapshots, optional start/end/reason parameters
 @app.route('/discarded')
 def get_discarded():
-
+    logging.debug("TESTING 2")
     try:
         # First check parameters are correct, if they exist
         valid_params = {'start', 'end', 'reason'}
@@ -96,18 +94,15 @@ def get_discarded():
             logging.error(f'Invalid reason value: {reason}')
             return jsonify({'error': "Invalid 'reason' value. Only 'age', 'suspect' or 'system' accepted"}), 400
         
-        # Validate start/end times and populate valid_snapshots list
-        valid_snapshots = get_valid_snapshots(start_time, end_time, discarded_snapshots)
-        # If not a list then return the error message
-        if not isinstance(valid_snapshots, list):
-            return valid_snapshots
+        # Validate and set start/end times
+        times = set_times(start_time, end_time)
 
-        # Filter by reason if provided
-        if reason:
-            valid_snapshots = [snap for snap in valid_snapshots if snap['reason'] == reason]
+        # If not a list then return the error message
+        if not isinstance(times, list):
+            return times        
         
-        logging.info(f'Successfully returned {len(valid_snapshots)} discarded snapshots')
-        return jsonify(valid_snapshots)
+        discarded_snapshots = get_discarded_snapshots(times[0], times[1], reason)
+        return jsonify(discarded_snapshots)
     
     except Exception as e:
         logging.error(f'Server error: {e}')

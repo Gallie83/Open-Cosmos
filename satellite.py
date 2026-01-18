@@ -1,8 +1,9 @@
 import requests
 import time
 from datetime import datetime
-from storage import snapshot_storage, discarded_snapshots
 import logging
+from storage import add_valid_snapshot, add_discarded_snapshot
+
 
 def get_snapshots():
     try:
@@ -27,48 +28,49 @@ def get_snapshots():
         # Convert timestamp to datetime object
         snapshot_time = datetime.fromtimestamp(snapshot['time'])
 
-        # Validate snapshot age
+        time_now = datetime.now()
+
+        # Validate snapshot age, save to discarded_snapshots if fails
         if snapshot_age > 3600:
             logging.warning(f'Snapshot over 1hr old, disregard: {snapshot}')
-            discarded_snapshots.append({ 
-                'time': snapshot_time, 
-                'value': snapshot['value'], 
-                'tags': snapshot['tags'], 
-                'reason': 'age' 
-                })
+            add_discarded_snapshot( 
+                snapshot_time, 
+                snapshot['value'], 
+                snapshot['tags'], 
+                'age',
+                time_now
+                )
             return
 
-        # Validate snapshot tags
+        # Validate snapshot tags, save to discarded_snapshots if fails
         elif 'system' in snapshot['tags']:
             logging.warning(f'Invalid system tag: {snapshot}')
-            discarded_snapshots.append({ 
-                'time': snapshot_time, 
-                'value': snapshot['value'], 
-                'tags': snapshot['tags'], 
-                'reason': 'system' 
-                })
+            add_discarded_snapshot( 
+                snapshot_time, 
+                snapshot['value'], 
+                snapshot['tags'], 
+                'system',
+                time_now
+                )
             return
         elif 'suspect' in snapshot['tags']: 
             logging.warning(f'Invalid suspect tag: {snapshot}')
-            discarded_snapshots.append({ 
-                'time': snapshot_time, 
-                'value': snapshot['value'], 
-                'tags': snapshot['tags'], 
-                'reason': 'suspect' 
-                })
+            add_discarded_snapshot( 
+                snapshot_time, 
+                snapshot['value'], 
+                snapshot['tags'], 
+                'suspect',
+                time_now
+                )
             return
 
-        # Print valid snapshots and append to snapshots list in storage.py
+        # Log valid snapshots and save to database
         tag = snapshot['tags'][0]
         temp = snapshot['value']
         time_str = datetime.fromtimestamp(snapshot['time'])
                                           
         logging.info(f"Valid {tag} snapshot measuring {temp}°C at {time_str.strftime('%H:%M:%S')}")
-        snapshot_storage.append({ 
-            'time': snapshot_time, 
-            'value': snapshot['value'], 
-            'tags': snapshot['tags'] 
-            })
+        add_valid_snapshot(snapshot_time, snapshot['value'], snapshot['tags'])
 
     except Exception as e:
         logging.error(f"Fetch error: {e}")

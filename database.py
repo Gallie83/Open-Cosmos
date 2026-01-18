@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 import psycopg2
+from psycopg2 import pool
 import logging
 
 # Retrieve environment variables from .env file
@@ -92,12 +93,10 @@ def get_connection():
         raise Exception("Connection pool not initialized. Call init_db() first.")
 
     connection = connection_pool.getconn()
-    logging.info("Connection successul")
     return connection
 
 # Release connection from pool once task has been executed
 def release_connection(conn):
-    logging.info("Releasing connection from pool...")
     try:
         connection_pool.putconn(conn)
     except Exception as e:
