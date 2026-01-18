@@ -63,7 +63,8 @@ def init_db():
                     time TIMESTAMP NOT NULL,
                     value REAL NOT NULL,
                     tags TEXT[] NOT NULL,
-                    reason TEXT NOT NULL
+                    reason TEXT NOT NULL,
+                    discarded_at TIMESTAMP NOT NULL
                 )
             """)
 
@@ -84,3 +85,29 @@ def init_db():
     except Exception as e:
         logging.error(f"Error connecting to database: {e}")
         raise
+
+# Request a connection from connection_pool
+def get_connection():
+    if connection_pool is None:
+        logging.error("Connection pool doesnt exist")
+        raise Exception("Connection pool not initialized. Call init_db() first.")
+
+    connection = connection_pool.getconn()
+    logging.info("Connection successul")
+    return connection
+
+# Release connection from pool once task has been executed
+def release_connection(conn):
+    logging.info("Releasing connection from pool...")
+    try:
+        connection_pool.putconn(conn)
+    except Exception as e:
+        logging.error(f'Error releasing connection: {e}')
+        # If can't release then crash program to prevent connection leak
+        raise
+
+# Close connection pool when server is stopped
+def close_pool():
+    if connection_pool:
+        connection_pool.closeall()
+        logging.info("Connection pool closed")
