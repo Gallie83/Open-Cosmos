@@ -5,7 +5,7 @@ Backend application built for Open Cosmos challenge project.
 ## Features
 
 - Real-time snapshot ingestion and validation
-- In-memory storage for both validated and discarded snapshots
+- Database storage for both validated and discarded snapshots
 - Exposes HTTP endpoints that returns validated or discarded snapshots
 - Optional query parameters such as start/end times and reason for being discarded
 - Structured logs
@@ -13,6 +13,8 @@ Backend application built for Open Cosmos challenge project.
 ## Prerequisites
 
 - Python 3.10 or higher
+- PostgreSQL
+- pgAdmin 4 or command-line access to create database
 
 ## Setup
 
@@ -34,6 +36,8 @@ python -m venv .venv
 ```bash
 pip install -r requirements.txt
 ```
+
+4. Setup database ( See [**Database Setup**](#database-setup) for more details)
 
 ## Running Application
 
@@ -78,7 +82,7 @@ Returns valid satellite snapshots as json with optional start/end time filtering
 **Error Responses**
 
 - `400`: Invalid parameters, non ISO-8601 time formats or a start time in the future
-- `500`: Sever errors
+- `500`: Server errors
 
 ### GET /discarded
 
@@ -106,15 +110,58 @@ Returns satellite snapshots that were discarded due to snapshots age being over 
 **Error Responses**
 
 - `400`: Invalid parameters, non ISO-8601 time formats or a start time in the future
-- `500`: Sever errors
+- `500`: Server errors
+
+## Database
+
+### Database Setup
+
+This application uses PostgreSQL as a database.
+
+1. To set up and connect the database, first create a new database with pgAdmin4 or through the command-line with:
+
+```sql
+CREATE DATABASE opencosmos;
+```
+
+2. Update your .env file in the root directory with the database information.
+
+```
+# .env example
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=your_database_name
+DB_USER=your_username
+DB_PASSWORD=your_password
+```
+
+3. When the project is run, 2 tables will be initialized in the database following the below schemas.
+
+### Database Schemas
+
+**valid_snapshots**
+
+- `id` (SERIAL PRIMARY KEY)
+- `time` (TIMESTAMP) - When the snapshot was captured
+- `value` (REAL) - Ground temperature of snapshot in °C
+- `tags` (TEXT[]) - List of snapshot tags
+
+**discarded_snapshots**
+
+- `id` (SERIAL PRIMARY KEY)
+- `time` (TIMESTAMP) - When the snapshot was captured
+- `value` (REAL) - Ground temperature of snapshot in °C
+- `tags` (TEXT[]) - List of snapshot tags
+- `reason` (TEXT) - Reason snapshot failed validation ('age', 'system', 'suspect')
+- `discarded_at` (TIMESTAMP) - The time the snapshot failed validation
 
 ## Approach and Trade-offs
 
-This backend application was built with simplicity and functionality in mind. I chose to build the API endpoints with Flask as it is an effective lightweight solution for writing REST api's with straight forward setup. I initially considered using dictionaries with timestamps as keys for in-memory storage, but opted for lists to avoid overwriting snapshots with identical timestamps. Snapshot's time values are stored as ISO-8601 as that is the format for query parameter start/end times.
+This backend application was built with simplicity and functionality in mind. I chose to build the API endpoints with Flask as it is an effective lightweight solution for writing REST api's with straight forward setup. Threading is used in main.py to allow the Flask server to run in the background and accept GET requests while satellite.py polls the mock server. Python's built in logging system is used to log valid and discarded snapshots being stored, as well as successful and non-successful api calls.
 
-Threading is used in main.py to allow the Flask server to run in the background and accept GET requests while satellite.py polls the mock server, and they can share in-memory storage naturally. Python's built in logging system is used to log valid and discarded snapshots being stored, as well as successful and non-successful api calls.
+Initially I was storing data in-memory but later refactored to include a PostgreSQL database to allow the data to persist server shutdowns. I separated this logic across multiple files: database.py handles database initialization and connection pooling while storage.py inserts and reads data using those connections.
 
-Validation was a top priority at every step. The responses returned by the mock server are validated for both the age and tags. In the API, validation checks are carried out on the start/end time parameters to check if they exist, are in the correct ISO-8601 format, and to ensure the start date is not a future date. To follow DRY principles I extracted re-occuring validation logic into a helper function get_valid_snapshots().
+Validation was a top priority at every step. The responses returned by the mock server are validated for both the age and tags. In the API, validation checks are carried out on the start/end time parameters to check if they exist, are in the correct ISO-8601 format, and to ensure the start date is not a future date. To follow DRY principles I extracted re-occuring validation logic into a helper function set_times().
 
 ## Project Architecture
 
@@ -122,7 +169,8 @@ Validation was a top priority at every step. The responses returned by the mock 
 Open-Cosmos/
 ├── main.py      # Calls satellite data every second with background API threading
 ├── satellite.py # Fetches satellite data and sorts into valid and discarded snapshots
-├── storage.py   # In-memory data storage for valid and discarded snapshots
+├── database.py  # Database initialization and functions to connect/disconnect from connection pool
+├── storage.py   # Takes validated API parameters and uses database.py connection to interact with database
 ├── api.py       # Flask REST endpoints
 └── data-server/ # Mock satellite server
 ```
