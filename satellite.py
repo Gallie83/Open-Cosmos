@@ -24,14 +24,14 @@ def get_snapshots():
         current_time = time.time()
         snapshot_age = current_time - snapshot['time']
 
-        # Convert timestamp from Unix to IsoTime
-        iso_time = datetime.fromtimestamp(snapshot['time']).isoformat()
+        # Convert timestamp to datetime object
+        snapshot_time = datetime.fromtimestamp(snapshot['time'])
 
         # Validate snapshot age
         if snapshot_age > 3600:
             logging.warning(f'Snapshot over 1hr old, disregard: {snapshot}')
             discarded_snapshots.append({ 
-                'time': iso_time, 
+                'time': snapshot_time, 
                 'value': snapshot['value'], 
                 'tags': snapshot['tags'], 
                 'reason': 'age' 
@@ -42,7 +42,7 @@ def get_snapshots():
         elif 'system' in snapshot['tags']:
             logging.warning(f'Invalid system tag: {snapshot}')
             discarded_snapshots.append({ 
-                'time': iso_time, 
+                'time': snapshot_time, 
                 'value': snapshot['value'], 
                 'tags': snapshot['tags'], 
                 'reason': 'system' 
@@ -51,7 +51,7 @@ def get_snapshots():
         elif 'suspect' in snapshot['tags']: 
             logging.warning(f'Invalid suspect tag: {snapshot}')
             discarded_snapshots.append({ 
-                'time': iso_time, 
+                'time': snapshot_time, 
                 'value': snapshot['value'], 
                 'tags': snapshot['tags'], 
                 'reason': 'suspect' 
@@ -65,7 +65,7 @@ def get_snapshots():
                                           
         logging.info(f"Valid {tag} snapshot measuring {temp}°C at {time_str.strftime('%H:%M:%S')}")
         snapshot_storage.append({ 
-            'time': iso_time, 
+            'time': snapshot_time, 
             'value': snapshot['value'], 
             'tags': snapshot['tags'] 
             })

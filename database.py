@@ -1,7 +1,6 @@
 import os
 from dotenv import load_dotenv
 import psycopg2
-from psycopg2 import pool
 import logging
 
 # Retrieve environment variables from .env file
