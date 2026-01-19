@@ -57,7 +57,7 @@ python main.py
 
 ## API
 
-Flask API is on `http://localhost:8080`
+API runs on `http://localhost:8080`
 
 ### GET /snapshots
 
@@ -187,3 +187,37 @@ Open-Cosmos/
 ├── api.py       # Flask REST endpoints
 └── data-server/ # Mock satellite server
 ```
+
+## Testing
+
+Manual testing was used throughout the application, with automated unit tests for satellite.py and api.py using pytest.
+
+**Running Tests**
+
+```bash
+pytest tests/
+```
+
+**Tests:**
+
+**satellite.py**
+
+- Valid snapshots are logged correctly ✅
+- Old snapshots (>1hr) are rejected and logged ✅
+- Snapshots with 'system' or 'suspect' tags are rejected ✅
+- 404 response from mock-server ✅
+- Non-200 response from mock-server ✅
+
+**api.py**
+
+- ISO-8601 datetime format validation ✅
+- Invalid ISO-8601 datetime formats are rejected ✅
+- set_times converts start/end parameters from ISO-8601 to datetime ✅
+- Empty parameters are set to default values ✅
+- Invalid start/end times return 400 error ✅
+- Future start dates are rejected ✅
+- Start time after end time returns 400 error ✅
+- Valid requests return 200 with correct data structure ✅
+- `/snapshots` endpoint returns valid snapshots ✅
+- `/discarded` endpoint returns discarded snapshots ✅
+- Invalid reason parameter returns 400 error ✅
