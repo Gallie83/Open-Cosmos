@@ -56,7 +56,7 @@ python main.py
 
 ## API
 
-API is on `http://localhost:8080`
+Flask API is on `http://localhost:8080`
 
 ### GET /snapshots
 
@@ -66,6 +66,12 @@ Returns valid satellite snapshots as json with optional start/end time filtering
 
 - `start`: ISO-8601 Format - Filter snapshots with start time - defaults to '0000-01-01T00:00:00' if omitted
 - `end`: ISO-8601 Format - Filter snapshots with end time - defaults to '9999-12-31T23:59:59' if omitted
+
+**Example**
+
+```bash
+curl "http://localhost:8080/snapshots?start=2026-01-18T14:00:00&end=2026-01-18T15:00:00"
+```
 
 **Response**
 
@@ -93,6 +99,12 @@ Returns satellite snapshots that were discarded due to snapshots age being over 
 - `start`: ISO-8601 Format - Filter snapshots with start time - defaults to '0000-01-01T00:00:00' if omitted
 - `end`: ISO-8601 Format - Filter snapshots with end time - defaults to '9999-12-31T23:59:59' if omitted
 - `reason`: Accepts 'age', 'suspect' or 'system' - Filters based on reason for snapshot being discarded
+
+**Example Use**
+
+```bash
+curl "http://localhost:8080/discarded?start=2026-01-18T14:00:00&end=2026-01-18T15:00:00&reason=age"
+```
 
 **Response**
 
@@ -159,7 +171,7 @@ DB_PASSWORD=your_password
 
 This backend application was built with simplicity and functionality in mind. I chose to build the API endpoints with Flask as it is an effective lightweight solution for writing REST api's with straight forward setup. Threading is used in main.py to allow the Flask server to run in the background and accept GET requests while satellite.py polls the mock server. Python's built in logging system is used to log valid and discarded snapshots being stored, as well as successful and non-successful api calls.
 
-Initially I was storing data in-memory but later refactored to include a PostgreSQL database to allow the data to persist server shutdowns. I separated this logic across multiple files: database.py handles database initialization and connection pooling while storage.py inserts and reads data using those connections.
+Initially I was storing data in-memory but later refactored to include a PostgreSQL database to allow the data to persist server shutdowns. I separated this logic across multiple files: database.py handles database initialization and connection pooling, while storage.py inserts and reads data using those connections.
 
 Validation was a top priority at every step. The responses returned by the mock server are validated for both the age and tags. In the API, validation checks are carried out on the start/end time parameters to check if they exist, are in the correct ISO-8601 format, and to ensure the start date is not a future date. To follow DRY principles I extracted re-occuring validation logic into a helper function set_times().
 
