@@ -8,14 +8,17 @@ app = Flask(__name__)
 # Validates ISO format
 def datetime_valid(dt_str):
     try:
+        # Ensure arg is a string
+        if not isinstance(dt_str, str):
+            return False
         datetime.fromisoformat(dt_str.replace('Z', '+00:00'))
         return True
     except ValueError:
         return False
     
 # Helper function to validate and set both start and end time
+# takes ISO-8601 and returns datetime for database querying
 def set_times(start_time, end_time):
-    logging.debug("TESTING")
     if start_time and not datetime_valid(start_time):
         logging.error(f'Invalid ISO start format: {start_time}')
         return jsonify({'error': 'Invalid ISO start format'}), 400
@@ -45,7 +48,6 @@ def set_times(start_time, end_time):
 # GET/ Returns all valid snapshots, optional start and end time parameters
 @app.route('/snapshots')
 def get_snapshots():
-    logging.debug("TESTING 1")
     try:
         # First check start and end parameters, if they exist
         valid_params = {'start', 'end'}
@@ -75,7 +77,6 @@ def get_snapshots():
 # GET/ Returns all discarded snapshots, optional start/end/reason parameters
 @app.route('/discarded')
 def get_discarded():
-    logging.debug("TESTING 2")
     try:
         # First check parameters are correct, if they exist
         valid_params = {'start', 'end', 'reason'}

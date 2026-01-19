@@ -1,6 +1,7 @@
 # Open Cosmos
 
 Backend application built for Open Cosmos challenge project.
+Aim High Go Beyond!
 
 ## Features
 
